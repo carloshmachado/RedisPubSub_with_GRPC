@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: local.Dockerfile
+    volumes:
+      - ./:/model-nfse
+    env_file:
+      - .env
+    ports:
+      - 50052:50052

@@ -1,0 +1,52 @@
+variables:
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  ECR_IMAGE: 035638428408.dkr.ecr.us-east-1.amazonaws.com/model-nfse
+  AWS_PROFILE: plugnotas
+
+stages:
+  - build
+  - deploy
+
+stable:
+  stage: build
+  only:
+    - tags
+  tags:
+    - shell
+  variables:
+    IMAGE_TAG: stable
+  script:
+    - docker build -t $ECR_IMAGE:$IMAGE_TAG -t $ECR_IMAGE:$CI_COMMIT_TAG $PWD --file Dockerfile
+    - docker push $ECR_IMAGE:$CI_COMMIT_TAG
+    - docker push $ECR_IMAGE:$IMAGE_TAG
+
+
+deploy-production:
+  stage: deploy
+  environment:
+    name: production
+  variables:
+    CLUSTER_NAME: worker
+    TASK_FAMILY: model-nfse
+    SERVICE_NAME: model-nfse-prod
+  only:
+    - tags
+  tags:
+    - shell
+  script:
+    # get the previous task-definition revision number
+    - export LAST_REVISION=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY | jq -jM --unbuffered ' .taskDefinition.revision ')
+    # get the previous task-definition execution role
+    # - export EXECUTION_ROLE=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY | jq -jM --unbuffered ' .taskDefinition.executionRoleArn ')
+    # get the previous task-definition volumes
+    - export VOLUMES=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY | jq -jM --unbuffered ' .taskDefinition.volumes | tojson')
+    # get the previous task-definition container definition with updated tag
+    - export CONTAINER_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY | jq -jM --unbuffered '.taskDefinition.containerDefinitions | .[0].image = "'"$ECR_IMAGE"':'"$CI_COMMIT_TAG"'" | tojson')
+    # register a new task-defnition with the last task-definition changing only the docker image
+    # - aws ecs register-task-definition --volumes $VOLUMES --family $TASK_FAMILY --execution-role-arn $EXECUTION_ROLE --container-definitions $CONTAINER_DEFINITION > /dev/null
+    - aws ecs register-task-definition --volumes $VOLUMES --family $TASK_FAMILY --container-definitions $CONTAINER_DEFINITION > /dev/null
+    # deregister the previous task-definition
+    - aws ecs deregister-task-definition --task-definition $TASK_FAMILY:$LAST_REVISION
+    # update the service to use the new task-definition
+    - aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $TASK_FAMILY
