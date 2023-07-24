@@ -12,8 +12,7 @@ COPY ./ /app
 COPY ["package.json", "./"]
 COPY ["package-lock.json", "./"]
 
-RUN npm set registry http://npm.tecnospeed.local \
-    && npm install \
+RUN npm install \
     && npm i -g prisma
 
 RUN npm run prisma-generate

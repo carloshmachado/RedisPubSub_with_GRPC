@@ -16,7 +16,6 @@ COPY ["package-lock.json", "./"]
 RUN apk add --update --no-cache --virtual build-dependencies \
     g++ \
     make \
-    && npm set registry http://npm.tecnospeed.local \
     && npm install \
     && npm i -g prisma \
     && apk del build-dependencies
