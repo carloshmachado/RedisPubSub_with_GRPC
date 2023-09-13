@@ -20,9 +20,6 @@ $ cd model-nfse
 # Instale as dependências e crie um arquivo .env com base no .env.example
 $ npm install
 
-# Baixe o arquivo abaixo e coloque na raiz do projeto
-# <http://git.tecnospeed.local/tecnospeed/facilitador/nfse-nacional/protobuf/protobuf/-/blob/develop/model-nfse/model-nfse.proto>
-
 # Execute a aplicação em modo de desenvolvimento
 $ npm run dev
 
@@ -40,7 +37,7 @@ $ npm run dev
 
 ```json
 {
-  "id": "647a0ae0a08f643c216f2fea",
+  "id": "647a0ae0a08XXXXXXXXXXX",
   "authorization": "token-da-aplicacao"
 }
 ```
